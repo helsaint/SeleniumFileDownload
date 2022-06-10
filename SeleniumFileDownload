@@ -1,0 +1,56 @@
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import WebDriverException
+import os
+
+def DownloadFile(strUrl, strXpath, strSaveTo=os.getcwd(),intTimeout=10):
+    savelocation = strSaveTo
+    url = strUrl
+    xpath = strXpath
+    #Webdriver used for this code is Chrome. The Chrome driver required can be found at:
+    #https://chromedriver.chromium.org/downloads. The driver must be compatible with your Chrome browser.
+    #In Chrome browser go to settings->About Chrome and see Version number. Download the matching driver.
+    options = webdriver.ChromeOptions()
+    #Set the location where we want to download the file to
+    prefs = {"download.default_directory": savelocation}
+    options.add_experimental_option("prefs",prefs)
+    driver = webdriver.Chrome(options=options)
+    intTimeout = intTimeout
+    
+    #Chrome browses to the URL, not using headless format
+    try:
+        driver.get(url)
+    except WebDriverException as WDE:
+        print(type(WDE), WDE, "It is possible that the URL=%s" %(url), " does not exist.")
+        return False
+    
+    try:
+        #Waits, with a timeout, for the element that contains the link for the download to be added.
+        test = WebDriverWait(driver, intTimeout).until(
+        EC.presence_of_element_located((By.XPATH, xpath)))
+        #Gets the element that contains the url that you would normally click on to get the download
+        download_url = driver.find_element(By.XPATH, xpath)
+        print(download_url.get_attribute("href"))
+        #Simulates clicking on a link and initiating a download.
+        download_url.click()
+        time.sleep(5)
+        driver.quit()
+        return True
+    except NoSuchElementException as NE:
+        print(type(NE), NE, "Check the value in strXPath: %s" %(xpath), " is correct")
+        driver.quit()
+        return False
+    except TimeoutException as TE:
+        print(type(TE), TE, 
+              "Timeout page may not have been loaded correctly or strXPath= %s" %(xpath), 
+              " was not found")
+        driver.quit()
+        return False
+    except NoSuchWindowException as NSWE:
+        print(type(NSWE), NSWE, "The browser window may have been closed too early")
